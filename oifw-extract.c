@@ -42,7 +42,7 @@ static void usage(const char *prg)
 
 /*
  *	4 bytes 	magic string 0x4f 0x49 0x46 0x57
- *	4 bytes 	size of file header (from start of file to end of blocks list) 
+ *	4 bytes 	size of file header (from start of file to end of blocks list)
  */
 
 struct fw_update_head {
@@ -55,7 +55,7 @@ struct fw_update_head {
  *	4 bytes 	size of property name
  *	4 bytes 	size of property
  *	N bytes 	property name (ASCII string)
- *	N bytes 	property value 
+ *	N bytes 	property value
  */
 struct prop {
 	uint32_t name_size;
@@ -68,7 +68,7 @@ struct prop {
  *	8 bytes 	block offset from the start of file (required to be 4-bytes alinged)
  *	8 bytes 	block size
  *	N bytes 	block name
- *	M bytes 	List of block-specific properties (see above for the format of the properties list) 
+ *	M bytes 	List of block-specific properties (see above for the format of the properties list)
  */
 struct block {
 	uint32_t name_size;
@@ -174,7 +174,8 @@ static int oifw_parse(const char *map,
 	return 0;
 }
 
-static int validate_name(const char *name) {
+static int validate_name(const char *name)
+{
 
 	while(*name) {
 		if (!isgraph(*name))
@@ -185,7 +186,8 @@ static int validate_name(const char *name) {
 	return 0;
 }
 
-static int node_accumulate(struct block *block, struct prop *prop, void *data) {
+static int node_accumulate(struct block *block, struct prop *prop, void *data)
+{
 	struct list_head *head = (struct list_head *) data;
 	struct node *node;
 
@@ -209,15 +211,18 @@ static int node_accumulate(struct block *block, struct prop *prop, void *data) {
 	return 0;
 }
 
-static int prop_accumulate(struct prop *prop, void *data) {
+static int prop_accumulate(struct prop *prop, void *data)
+{
 	return node_accumulate(NULL, prop, data);
 }
 
-static int block_accumulate(struct block *block, void *data) {
+static int block_accumulate(struct block *block, void *data)
+{
 	return node_accumulate(block, NULL, data);
 }
 
-static int block_prop_accumulate(struct block *block, struct prop *prop, void *data) {
+static int block_prop_accumulate(struct block *block, struct prop *prop, void *data)
+{
 	return node_accumulate(block, prop, data);
 }
 
@@ -458,11 +463,11 @@ int main(int argc, char *argv[])
 				break;
 			case 'B':
 				flag_B = 1;
-				block = optarg; 
+				block = optarg;
 				break;
 			case 's':
 				flag_s = 1;
-				property = optarg; 
+				property = optarg;
 				break;
 			case 'x':
 				flag_x = 1;
