@@ -306,13 +306,13 @@ static int oifw_list_block_properties(const char *map, const char *block)
 
 }
 
-static int write_out(const char *ptr, ssize_t left, int fd)
+static int write_out(const char *ptr, ssize_t left, FILE *f)
 {
 	ssize_t ret;
 	while (left) {
-		ret = write(fd, ptr, left);
-		if (ret == -1) {
-			perror("Failed to write the block data to the output");
+		ret = fwrite(ptr, left, 1, f);
+		if (!ret && ferror(f)) {
+			perror("Failed to write the block data to the output stream");
 			return 1;
 		}
 
@@ -323,14 +323,14 @@ static int write_out(const char *ptr, ssize_t left, int fd)
 	return 0;
 }
 
-static int extract_block(const char *map, struct block *block, int fd)
+static int extract_block(const char *map, struct block *block, FILE *f)
 {
-	return write_out(map + block->offset, block->size, fd);
+	return write_out(map + block->offset, block->size, f);
 }
 
-static int extract_property(struct prop *prop, int fd)
+static int extract_property(struct prop *prop, FILE *f)
 {
-	return write_out(prop->data+prop->name_size, prop->value_size, fd);
+	return write_out(prop->data+prop->name_size, prop->value_size, f);
 }
 
 static int oifw_get_property(const char *map, const char *block, const char *property)
@@ -355,13 +355,13 @@ static int oifw_get_property(const char *map, const char *block, const char *pro
 			struct node *node = container_of(tmp, struct node, head);
 			if (!strcmp(node->block->data, block))
 				if (!strcmp(node->prop->data, property))
-					return extract_property(node->prop, STDOUT_FILENO);
+					return extract_property(node->prop, stdout);
 		}
 	} else {
 		list_for_each(tmp, &prop_head) {
 			struct node *node = container_of(tmp, struct node, head);
 			if (!strcmp(node->prop->data, property))
-				return extract_property(node->prop, STDOUT_FILENO);
+				return extract_property(node->prop, stdout);
 		}
 	}
 
@@ -411,7 +411,7 @@ static int oifw_extract_block(const char *map, const char *block)
 					fprintf(stderr, "CRC check failed\n");
 					return 1;
 				} else {
-					return extract_block(map, node->block, STDOUT_FILENO);
+					return extract_block(map, node->block, stdout);
 				}
 			}
 		}
@@ -421,7 +421,7 @@ static int oifw_extract_block(const char *map, const char *block)
 	list_for_each(tmp, &block_head) {
 		struct node *node = container_of(tmp, struct node, head);
 		if (!strcmp(node->block->data, block))
-			return extract_block(map, node->block, STDOUT_FILENO);
+			return extract_block(map, node->block, stdout);
 	}
 
 	fprintf(stderr, "Block not found: %s\n", block);
