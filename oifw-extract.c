@@ -30,12 +30,13 @@ static void usage(const char *prg)
 {
 	printf("Usage: %s <options> <file>\n", prg);
 	printf("Options:\n");
-	printf("\t-c\t\tCheck is the file is an OpenInkpot firmware update\n");
+	printf("\t-c\t\tCheck if the file is an OpenInkpot firmware update\n");
 	printf("\t-l\t\tList properties\n");
 	printf("\t-b\t\tList data blocks\n");
 	printf("\t-B<block>\tWork with this block.\n");
 	printf("\t-s<property\tRequest a given proerty.\n");
 	printf("\t-x\t\tExtract a data block to stdout. Checks the block crc if present.\n");
+	printf("\t-f\t\tExtract the block even if the crc does not match.\n");
 }
 
 #define OIFW_MAGIC "OIFW"
@@ -310,7 +311,7 @@ static int write_out(const char *ptr, ssize_t left, FILE *f)
 {
 	ssize_t ret;
 	while (left) {
-		ret = fwrite(ptr, left, 1, f);
+		ret = fwrite(ptr, 1, left, f);
 		if (!ret && ferror(f)) {
 			perror("Failed to write the block data to the output stream");
 			return 1;
@@ -386,7 +387,7 @@ static int check_block(const char *map, struct block *block, const char *crc_str
 
 
 
-static int oifw_extract_block(const char *map, const char *block)
+static int oifw_extract_block(const char *map, const char *block, int force)
 {
 	struct list_head block_head, block_prop_head;
 	struct list_head *tmp;
@@ -407,8 +408,7 @@ static int oifw_extract_block(const char *map, const char *block)
 		struct node *node = container_of(tmp, struct node, head);
 		if (!strcmp(node->block->data, block)) {
 			if (!strcmp(node->prop->data, "crc32")) {
-				if (check_block(map, node->block, node->prop->data + node->prop->name_size)) {
-					fprintf(stderr, "CRC check failed\n");
+				if (check_block(map, node->block, node->prop->data + node->prop->name_size) && !force) {
 					return 1;
 				} else {
 					return extract_block(map, node->block, stdout);
@@ -438,6 +438,7 @@ int main(int argc, char *argv[])
 	int flag_B = 0;
 	int flag_x = 0;
 	int flag_s = 0;
+	int flag_f = 0;
 	char *block;
 	char *property;
 
@@ -450,8 +451,11 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while ((opt = getopt(argc, argv, "clbB:s:x")) != -1) {
+	while ((opt = getopt(argc, argv, "fclbB:s:x")) != -1) {
 		switch (opt) {
+			case 'f':
+				flag_f = 1;
+				break;
 			case 'c':
 				flag_c = 1;
 				break;
@@ -523,7 +527,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Pelease specify the block name\n");
 			exit(1);
 		}
-		oifw_extract_block(map, block);
+		oifw_extract_block(map, block, flag_f);
 	}
 
 	return 0;
